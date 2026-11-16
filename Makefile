@@ -2,7 +2,7 @@ SHELL := /bin/bash
 PYTHON ?= python
 export PYTHONPATH := src
 
-.PHONY: setup bench data train eval export status test chaos
+.PHONY: setup bench data train sft dpo eval export status test chaos
 
 setup:
 	bash scripts/bootstrap.sh
@@ -15,6 +15,12 @@ data:
 
 train:
 	$(PYTHON) -m t4llm supervise --config configs/$(or $(PHASE),cpt).yaml
+
+sft:
+	$(PYTHON) -m t4llm sft --config configs/sft.yaml $(if $(TRAIN_FILE),--train-file $(TRAIN_FILE),)
+
+dpo:
+	$(PYTHON) -m t4llm dpo --config configs/dpo.yaml $(if $(TRAIN_FILE),--train-file $(TRAIN_FILE),)
 
 eval:
 	$(PYTHON) -m t4llm eval --config configs/$(or $(PHASE),cpt).yaml

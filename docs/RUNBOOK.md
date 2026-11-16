@@ -118,6 +118,59 @@ What divergence does:
 - More than `resilience.max_rollbacks` (default 3): fatal halt. Inspect; do not
   loop forever.
 
+## 4a. SFT (phase 2)
+
+SFT data is JSONL, one example per line, and every record needs a real
+`license` (plus optional `source`). Two shapes are accepted:
+
+```json
+{"messages": [{"role": "user", "content": "..."}, {"role": "assistant", "content": "..."}], "source": "my-sft-v1", "license": "CC-BY-4.0"}
+{"prompt": "...", "response": "...", "source": "my-sft-v1", "license": "CC-BY-4.0"}
+```
+
+```bash
+python -m t4llm sft --config configs/sft.yaml --train-file sft.jsonl
+```
+
+The trainer tokenizes with the base tokenizer's exact chat template, masks the
+prompt with `-100`, supervises only the assistant completion, and never packs
+two examples into one sequence. Truncation drops prompt tokens from the left and
+always keeps at least one completion token. `train.packing: true` or
+`train_on_responses_only: false` is refused. NEFTune is active only when
+`train.neftune_noise_alpha > 0`.
+
+The data identity is the SHA-256 of the JSONL file, folded into
+`run.data_revision`; editing the file invalidates resume. The cursor is
+`(epoch, position in deterministic shuffled epoch, supervised completion
+tokens)`. Resume, OOM, checkpointing, backpressure and divergence behave like
+CPT.
+
+```bash
+python -m t4llm status --config configs/sft.yaml --train-file sft.jsonl
+python -m t4llm resume --config configs/sft.yaml --train-file sft.jsonl
+```
+
+## 4b. DPO (phase 3)
+
+DPO data is JSONL with one preference pair per line:
+
+```json
+{"prompt": "...", "chosen": "...", "rejected": "...", "system": "optional", "source": "my-dpo-v1", "license": "CC-BY-4.0"}
+```
+
+```bash
+python -m t4llm dpo --config configs/dpo.yaml --train-file dpo.jsonl
+```
+
+Only the standard sigmoid DPO objective (`loss_type: dpo` or `sigmoid`) is
+shipped; ORPO/IPO are refused. Reference log-probabilities come from the same
+PEFT model with `disable_adapter()` under `no_grad`, so one model stays in VRAM.
+The reference logits are freed before the policy forward. Prompt tokens are
+masked in both rows. Packing is refused. `train.beta` must be positive.
+
+DPO resumes exactly like SFT: same checkpoint schema, same file-digest identity,
+same cursor semantics. The status/resume commands take `--train-file dpo.jsonl`.
+
 ## 5. Monitor
 
 ```bash

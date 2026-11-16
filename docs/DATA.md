@@ -109,6 +109,41 @@ python -m t4llm resume --config configs/cpt.yaml
 training uses `run.data_revision` and fetches `rev-<hash>` from the dataset repo,
 verifying every shard hash; a corrupt local cache is deleted and re-downloaded.
 
+## Phase data (SFT / DPO)
+
+CPT data is packed into immutable shards. SFT and DPO are different: they read
+one JSONL file directly, keep each example separate, and identify the data by
+`file-sha256:<sha256 of the file>`. No packing, no shard index, no tokenizer at
+build time — tokenization happens in the trainer with the base model's exact
+chat template.
+
+SFT records (one of):
+
+```json
+{"messages": [{"role": "user", "content": "..."}, {"role": "assistant", "content": "..."}], "source": "sft-v1", "license": "CC-BY-4.0"}
+{"prompt": "...", "response": "...", "source": "sft-v1", "license": "CC-BY-4.0"}
+```
+
+DPO records:
+
+```json
+{"prompt": "...", "chosen": "...", "rejected": "...", "system": "optional", "source": "dpo-v1", "license": "CC-BY-4.0"}
+```
+
+Rules enforced before training starts:
+
+- every record declares a real `license`; `unknown`, `none`, `n/a` and
+  `unlicensed` are refused;
+- every source must use one consistent licence;
+- the last SFT message must be the assistant completion and must be non-empty;
+- DPO `chosen` and `rejected` must both be non-empty;
+- `data.sft_file` / `data.pref_file` (or `--train-file`) is mandatory;
+- if `run.data_revision` is pinned, it must equal the file digest.
+
+Editing the JSONL changes the digest and therefore the run identity. Treat the
+file as immutable during a run; append by creating a new revision and a new run,
+not by rewriting the file underneath a live cursor.
+
 ## Collection and legality checklist
 
 - Record the exact source URL/version, retrieval date, and licence text.

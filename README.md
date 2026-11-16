@@ -16,7 +16,8 @@ GGUF. The durable source of truth is the Hub; local disk is a cache.
 | Resume with RNG/optimizer/scheduler and loss guard | implemented and tested |
 | Held-out + general-regression eval | implemented and tested on the tiny fixture |
 | Merged safetensors export + GGUF conversion | implemented and tested (safetensors); GGUF needs `llama.cpp` |
-| SFT and DPO trainers | **not shipped yet**; the CPT loop refuses those phases loudly |
+| SFT trainer | implemented and tested: prompt masking, no packing, NEFTune, crash-only resume |
+| DPO trainer | implemented and tested: sigmoid objective, adapter-disabled reference, crash-only resume |
 | Real domain run | **blocked** on domain, repo names, dataset licence, and base confirmation |
 
 Nothing in this repository invents a benchmark, a licence, or a training result.
@@ -68,16 +69,21 @@ python -m t4llm status --config configs/cpt.yaml
 python -m t4llm resume --config configs/cpt.yaml
 python -m t4llm eval --config configs/cpt.yaml
 python -m t4llm export --config configs/cpt.yaml
+
+# phase 2/3: point data.sft_file / data.pref_file at a licence-declaring JSONL
+python -m t4llm sft --config configs/sft.yaml --train-file sft.jsonl
+python -m t4llm dpo --config configs/dpo.yaml --train-file dpo.jsonl
 ```
 
-`supervise` relaunches the child after crashes, stops on fatal resume/config
-errors, and relies on the wall-clock budget rather than signal handlers. The
-child can be `kill -9`ed at any point.
+`supervise` dispatches CPT, SFT and DPO from `run.phase`; it relaunches the
+child after crashes, stops on fatal resume/config errors, and relies on the
+wall-clock budget rather than signal handlers. The child can be `kill -9`ed at
+any point.
 
 ## Layout
 
 ```
-configs/            base + phase YAML (only cpt is wired today)
+configs/            base + CPT/SFT/DPO YAML
 src/t4llm/
   env.py            GPU probe and hard policy gates
   state.py          run identity, manifests, atomic writes
@@ -85,12 +91,15 @@ src/t4llm/
   data.py           deterministic dedup/pack, immutable revisions, cursor
   modeling.py       fp16 base + fp32 LoRA, optimizer/scheduler
   resume.py         resolution, verification, RNG/optimizer restore
-  loop.py           training loop and supervising parent
+  loop.py           CPT loop and supervising parent
+  phase_core.py     shared SFT/DPO durability, cursor and phase data identity
+  sft.py            prompt-masked SFT (no packing, NEFTune)
+  pref.py           sigmoid DPO with adapter-disabled reference
   eval.py           held-out perplexity and general-regression guard
   export.py         merge fp16 LoRA, safetensors, GGUF
   bench.py          measured benchmark writer
   fixtures.py       tiny model/data for tests and chaos
-scripts/            bootstrap.sh, chaos_test.sh
+scripts/            bootstrap.sh, chaos_test.sh, push_hf_backup.py
 tests/              CPU contract suite + GPU end-to-end tests
 docs/               RUNBOOK, DECISIONS, DATA, BENCH, EVAL
 ```

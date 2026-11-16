@@ -144,19 +144,23 @@ base is already resident, so the delta is cheap.
 **Consequence:** eval needs a held-out domain JSONL. Training data is never
 used as the eval set.
 
-## ADR-0012 — SFT/DPO are not silently routed through CPT packing
+## ADR-0012 — phase trainers share durability, not the CPT loss path
 
-**Decision:** the CPT loop rejects `run.phase` other than `cpt`. Phase-specific
-trainers must implement prompt/completion masking and (for DPO) the reference
-policy.
+**Decision:** the CPT loop rejects `run.phase` other than `cpt`. SFT and DPO use
+a separate trainer (`phase_core.py` plus `sft.py`/`pref.py`) that reuses the
+checkpoint, manifest, resume, OOM and push machinery but owns its batching and
+loss. SFT masks prompt tokens and supervises only the completion; DPO computes
+reference log-probabilities with the LoRA adapter disabled. Packing is refused
+for both phases.
 
-**Why:** running SFT through the CPT loss would train on prompt tokens and
-pack across conversations. That is a silent correctness failure, worse than a
-loud “not implemented”.
+**Why:** running SFT through the CPT loss would train on prompt tokens and pack
+across conversations. Duplicating the durability code instead of sharing it
+would let the two paths drift on the one contract that must never drift.
 
-**Consequence:** `configs/sft.yaml` and `configs/dpo.yaml` are staged configs,
-not runnable until the phase trainers land. Do not remove the guard without
-implementing the masking.
+**Consequence:** `configs/sft.yaml` and `configs/dpo.yaml` are runnable once
+`data.sft_file` / `data.pref_file` points at a licence-declaring JSONL. The
+`train` CLI still refuses non-CPT phases; use `sft`, `dpo`, or `supervise`.
+Do not remove the CPT guard to “unify” the paths.
 
 ## ADR-0013 — token/credential handling in logs and state
 
@@ -165,3 +169,18 @@ environment; store only repo ids and commit metadata in run state.
 
 **Why:** a single leaked notebook output can invalidate a token. The code never
 needs the secret after the API client is constructed.
+
+## ADR-0014 — phase data identity is the JSONL file digest
+
+**Decision:** an SFT/DPO run identifies its data by
+`file-sha256:<sha256 of the JSONL>` in `run.data_revision`. The cursor stores
+`shard_idx = epoch`, `sample_idx = position in the deterministic shuffled
+epoch`, and `consumed_tokens = supervised completion tokens`. A changed file is
+a different run; resume validates the digest before restoring.
+
+**Why:** the CPT data identity is a packed-shard revision with its own index.
+Phase data has no shards and must remain append-friendly, but the same rule
+applies: moved data cannot silently continue an old run.
+
+**Consequence:** editing a JSONL invalidates resume by design. Rebuild/repin or
+start a new run; never rewrite the file under a live run.
