@@ -203,11 +203,29 @@ def cmd_status(args: argparse.Namespace) -> int:
     from .hub import PushManager, make_backend
 
     cfg = _config(args)
+    run_id_hint: str | None = None
+    if str(cfg["run"]["phase"]) != "cpt":
+        # Status must resolve the same run id the phase trainer uses, which
+        # folds the training-file digest into run.data_revision.  A missing or
+        # unreadable file must not make a read-only status command crash.
+        try:
+            from .phase_core import prepare_phase_run
+
+            prepared = prepare_phase_run(
+                args.config,
+                train_file=getattr(args, "train_file", None),
+                model=args.model,
+                require_t4=False,
+            )
+            cfg = prepared.cfg
+            run_id_hint = prepared.run_id
+        except Exception:
+            pass
     backend = make_backend(cfg, "model")
     mgr = PushManager(backend)
     st = mgr.status()
     hb = st.get("heartbeat", {}) or {}
-    run_id = hb.get("run_id") or st.get("run_id")
+    run_id = hb.get("run_id") or st.get("run_id") or run_id_hint
     if not run_id:
         try:
             run_id = make_run_id(cfg, compute_config_hash(cfg))
@@ -370,6 +388,7 @@ def build_parser() -> argparse.ArgumentParser:
     s.add_argument("--config", default="configs/cpt.yaml")
     s.add_argument("--json", action="store_true")
     s.add_argument("--data-dir", default=None)
+    s.add_argument("--train-file", default=None)
     s.add_argument("--model", default=None)
     s.set_defaults(func=cmd_status)
 

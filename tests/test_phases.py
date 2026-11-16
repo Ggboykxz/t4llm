@@ -213,6 +213,10 @@ def test_cli_exposes_sft_and_dpo_commands():
     for cmd in ("sft", "dpo"):
         args = parser.parse_args([cmd, "--config", f"configs/{cmd}.yaml"])
         assert args.func is not None
+    status = parser.parse_args(
+        ["status", "--config", "configs/sft.yaml", "--train-file", "sft.jsonl"]
+    )
+    assert status.train_file == "sft.jsonl"
 
 
 def test_sft_neftune_noise_changes_the_loss(tmp_path, tokenizer):
