@@ -101,6 +101,7 @@ src/t4llm/
   fixtures.py       tiny model/data for tests and chaos
 scripts/            bootstrap.sh, chaos_test.sh, push_hf_backup.py
 tests/              CPU contract suite + GPU end-to-end tests
+notebooks/run.ipynb end-to-end notebook: setup, data, CPT/SFT/DPO, eval, export
 docs/               RUNBOOK, DECISIONS, DATA, BENCH, EVAL
 ```
 
