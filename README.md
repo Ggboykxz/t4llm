@@ -49,6 +49,7 @@ throughput/VRAM/checkpoint/upload table.
 
 Source mirrors and first run:
 
+- Live dashboard: <https://ggboykxz.github.io/t4llm-dashboard/> — live heartbeat, checkpoints, loss/throughput charts, data digests, source backup (Next.js, public APIs, no tokens)
 - GitHub: <https://github.com/Ggboykxz/t4llm> — Apache-2.0
 - Hugging Face source backup: <https://huggingface.co/Ggboykxz/t4llm-source>
   (source only, no weights or data)
