@@ -40,7 +40,7 @@ if [[ ! -f "${LLAMA_CPP_DIR:-/content/llama.cpp}/convert_hf_to_gguf.py" ]]; then
         >/dev/null 2>&1 || true
       if [[ -d "${LLAMA_CPP_DIR:-/content/llama.cpp}/.git" ]]; then
         git -C "${LLAMA_CPP_DIR:-/content/llama.cpp}" sparse-checkout set \
-          convert_hf_to_gguf.py gguf-py >/dev/null 2>&1 || true
+          --skip-checks convert_hf_to_gguf.py conversion gguf-py >/dev/null 2>&1 || true
       fi
     fi
   fi

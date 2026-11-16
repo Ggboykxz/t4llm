@@ -19,6 +19,9 @@ dist/
 .cache/
 data-cache/
 ckpt/
+data/
+exports/
+llama.cpp/
 # Colab/system noise, never project work
 .config/
 sample_data/

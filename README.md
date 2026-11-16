@@ -47,6 +47,12 @@ Measured on this host: Tesla T4, 14.56 GiB, compute capability 7.5, Python
 bitsandbytes 0.50.2, datasets 4.8.5. See `docs/BENCH.md` for the measured
 throughput/VRAM/checkpoint/upload table.
 
+Source mirrors:
+
+- GitHub: <https://github.com/Ggboykxz/t4llm>
+- Hugging Face source backup: <https://huggingface.co/Ggboykxz/t4llm-source>
+  (source only, no weights or data; no licence chosen)
+
 ## Quick start
 
 ```bash
