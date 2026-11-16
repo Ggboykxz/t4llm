@@ -184,3 +184,35 @@ applies: moved data cannot silently continue an old run.
 
 **Consequence:** editing a JSONL invalidates resume by design. Rebuild/repin or
 start a new run; never rewrite the file under a live run.
+
+## ADR-0015 — first real run: Python code SFT on Qwen3-1.7B-Base
+
+**Decision (operator delegated “make all the right decisions and start”):**
+the first real run is SFT of `Qwen/Qwen3-1.7B-Base` (Apache-2.0) on Python
+function-level instruction data from `bigcode/self-oss-instruct-sc2-exec-filter-50k`,
+pinned at revision `356bb069eee815daa6e23e9a282eeefe1490ad44`, licensed
+**ODC-BY-1.0** (attribution required). Domain: Python code generation.
+
+- Model repo: `Ggboykxz/t4llm-python-sft` (checkpoints + merged export).
+- Data repo: `Ggboykxz/t4llm-python-data` (dataset, attribution, `heldout.jsonl`).
+- Code licence: Apache-2.0 (`LICENSE`).
+- Split: deterministic shuffle, seed 3407; 10,000 train + 500 held-out.
+- Measured token stats (300-row sample): median 990 tokens/example, max 1892;
+  ~9.9M train tokens; fits `seq_len 2048`. At the measured ~1k tok/s this is
+  roughly 3 h of supervised cells; resumable via `kill -9`-safe checkpoints.
+- DPO is **not** run: no real preference pairs exist for this domain yet.
+- CPT is **not** run first: the corpus is ~10M tokens, below the threshold
+  where packing-based pretraining pays off; SFT directly is cheaper.
+- Evaluation: held-out perplexity against the frozen base; no pass@1/execution
+  claim is made until sandboxed evaluation exists (it does not yet).
+- Attribution: every record and the data repo carry `license: ODC-BY-1.0` and
+  `source: bigcode/self-oss-instruct-sc2-exec-filter-50k@356bb069`; the repo
+  ships `NOTICE` with the dataset URL, revision and licence link.
+
+**Why:** the user delegated the decision set and asked to start. Every input is
+verifiable (base licence Apache-2.0, dataset licence ODC-BY-1.0, pinned
+revision) and the run fits the T4 and the resumable checkpoint design.
+
+**Consequence:** if the domain is changed later, `configs/sft.yaml` and the
+data repo are the only places to touch; the trainers, checkpoint schema and
+export path are domain-agnostic.

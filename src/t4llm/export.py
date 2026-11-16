@@ -12,8 +12,8 @@ from typing import Any
 
 import torch
 
+from . import loop
 from .hub import FatalHubError, HFBackend, LocalBackend, make_backend
-from .loop import repo_root, runs_root
 from .modeling import build_model, configure_cuda, load_adapter
 from .resume import resolve_and_download
 from .state import (
@@ -195,7 +195,7 @@ def export_model(
     backend = make_backend(cfg, "model")
     resolved = resolve_and_download(
         backend,
-        cache_dir=runs_root() / "_export-cache",
+        cache_dir=loop.runs_root() / "_export-cache",
         expected_config_hash=compute_config_hash(cfg),
         config=cfg,
     )
@@ -206,7 +206,7 @@ def export_model(
             f"requested step {checkpoint_step}, resolved {resolved.manifest.global_step}"
         )
     step = resolved.manifest.global_step
-    root = Path(out_dir) if out_dir else repo_root() / "exports" / resolved.manifest.run_id / f"step-{step:08d}"
+    root = Path(out_dir) if out_dir else loop.repo_root() / "exports" / resolved.manifest.run_id / f"step-{step:08d}"
     if root.exists():
         shutil.rmtree(root)
     root.mkdir(parents=True, exist_ok=True)

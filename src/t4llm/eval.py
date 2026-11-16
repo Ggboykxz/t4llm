@@ -15,7 +15,7 @@ from typing import Any, Iterable
 import torch
 
 from .hub import make_backend
-from .loop import repo_root, runs_root
+from . import loop
 from .modeling import build_model, configure_cuda, load_adapter
 from .resume import resolve_and_download
 from .state import ConfigError, atomic_write_text, compute_config_hash, load_config, utcnow
@@ -144,7 +144,7 @@ def _resolve(config: dict[str, Any], step: int | None):
     backend = make_backend(config, "model")
     resolved = resolve_and_download(
         backend,
-        cache_dir=runs_root() / "_eval-cache" / (str(step) if step else "latest"),
+        cache_dir=loop.runs_root() / "_eval-cache" / (str(step) if step else "latest"),
         expected_config_hash=compute_config_hash(config),
         config=config,
     )
@@ -281,10 +281,10 @@ def run_eval(
         "base_general": base_general,
         "notes": [] if general is not None else ["general regression not measured"],
     }
-    out_path = runs_root() / run_id / f"eval-{step:08d}.json"
+    out_path = loop.runs_root() / run_id / f"eval-{step:08d}.json"
     out_path.parent.mkdir(parents=True, exist_ok=True)
     atomic_write_text(out_path, json.dumps(result, indent=2, sort_keys=True) + "\n")
-    _append_report(repo_root() / "docs" / "EVAL.md", result)
+    _append_report(loop.repo_root() / "docs" / "EVAL.md", result)
     # Eval results are diagnostics, not training state; keep them separately.
     try:
         backend.upload_bytes(

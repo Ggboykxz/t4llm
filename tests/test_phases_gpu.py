@@ -258,3 +258,27 @@ def test_sft_neftune_trains_with_gradient_checkpointing(isolated):
     noisy_prepared = load_phase_config(cfg, train_file=data, require_t4=False)
     plain_prepared = load_phase_config(plain, train_file=data, require_t4=False)
     assert noisy_prepared.cfg_hash != plain_prepared.cfg_hash
+
+
+@pytest.mark.parametrize("phase", ["sft", "dpo"])
+def test_supervise_dispatches_phase_trainers(isolated, phase):
+    """The real notebook entry point is `supervise`, not the direct trainer."""
+    from t4llm.loop import supervise
+
+    rows = _sft_rows() if phase == "sft" else _dpo_rows()
+    data = _write(isolated / f"sup-{phase}.jsonl", rows)
+    cfg = _config(isolated / f"sup-{phase}", phase, data)
+
+    assert supervise(
+        cfg, time_budget="180s", max_steps=1, train_file=data
+    ) == 0
+
+    mgr = PushManager(LocalBackend(isolated / "hub"))
+    assert mgr.resolve_latest() == 1
+    manifest = mgr.read_manifest(1)
+    assert manifest.run_id.startswith(f"tiny-{phase}-")
+    assert manifest.cursor["data_revision"].startswith("file-sha256:")
+    assert manifest.cursor["sample_idx"] == 1
+    state = load_run_state(isolated / "runs" / manifest.run_id)
+    assert state is not None and state.global_step == 1
+    assert state.status == "done"

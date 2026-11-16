@@ -1,0 +1,38 @@
+# First real run (ADR-0015): SFT of Qwen3-1.7B-Base on Python code data.
+# Dataset: bigcode/self-oss-instruct-sc2-exec-filter-50k @356bb069 (ODC-BY-1.0),
+# derived split: 10,000 train / 500 held-out, seed 3407, see NOTICE in the data repo.
+#
+# The data identity is the SHA-256 of data/python-sft/train.jsonl; editing it
+# invalidates resume. Do not rewrite the file under a live run.
+run:
+  phase: sft
+  base_slug: qwen3-1.7b-python-sft
+  hub_repo: Ggboykxz/t4llm-python-sft
+  data_repo: Ggboykxz/t4llm-python-data
+  data_revision: null            # resolved from the file digest at run time
+
+data:
+  sft_file: data/python-sft/train.jsonl
+  revision: null
+  local_dir: null
+
+train:
+  lr: 0.0001
+  max_steps: 625                 # 10,000 examples / (1 x 16)
+  micro_batch: 1
+  grad_accum: 16
+  packing: false
+  train_on_responses_only: true
+  neftune_noise_alpha: 5.0
+  num_train_epochs: 1
+
+resilience:
+  ckpt_every_minutes: 6
+  ckpt_every_steps: 20
+  time_budget_minutes: 20
+  keep_last: 3
+  keep_milestones_every: 250
+
+eval:
+  domain_set: null               # pass --domain-set data/python-sft/heldout.jsonl
+  general_samples: 0
