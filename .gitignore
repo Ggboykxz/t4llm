@@ -25,3 +25,6 @@ llama.cpp/
 # Colab/system noise, never project work
 .config/
 sample_data/
+
+# Nested separate repo (published independently)
+t4llm-dashboard/
