@@ -1,5 +1,5 @@
 #!/usr/bin/env python
-"""Push a self-contained backup of this repo to a private HF Hub repo.
+"""Push a self-contained backup of this repo to a HF Hub repo.
 
 The code is the only durable artifact we can publish before the domain, data
 licences and final base model are confirmed.  Training checkpoints are *not*
@@ -9,8 +9,8 @@ path.  This script exists so a dying notebook session cannot lose the source.
 Usage:
 
     export HF_TOKEN=...                 # never write it to a file
-    python scripts/push_hf_backup.py --repo Ggboykxz/t4llm-pipeline \
-        --create-private
+    python scripts/push_hf_backup.py --repo Ggboykxz/t4llm-source \
+        --create-private                # omit for an existing public repo
 
 Uploads, under ``backup/`` in the target repo:
 
@@ -100,12 +100,13 @@ def main(argv: list[str] | None = None) -> int:
     from huggingface_hub import HfApi
 
     api = HfApi(token=token)
-    api.create_repo(
-        args.repo,
-        repo_type="model",
-        private=True,
-        exist_ok=True,
-    ) if args.create_private else None
+    if args.create_private:
+        api.create_repo(
+            args.repo,
+            repo_type="model",
+            private=True,
+            exist_ok=True,
+        )
     try:
         api.repo_info(args.repo, repo_type="model")
     except Exception as exc:
