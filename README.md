@@ -62,6 +62,8 @@ make bench        # measured T4 numbers; upload row is SKIPPED until a repo exis
 make data         # requires --input JSONL; see docs/DATA.md
 make test         # CPU contract suite
 make chaos        # kill -9 continuity test on the tiny fixture
+make push         # GitHub source mirror
+make backup       # HF source backup (archive + git bundle)
 ```
 
 Fill in `run.hub_repo`, `run.data_repo`, and the pinned `run.data_revision`

@@ -2,7 +2,7 @@ SHELL := /bin/bash
 PYTHON ?= python
 export PYTHONPATH := src
 
-.PHONY: setup bench data train sft dpo eval export status test chaos
+.PHONY: setup bench data train sft dpo eval export status test chaos backup push
 
 setup:
 	bash scripts/bootstrap.sh
@@ -36,3 +36,9 @@ test:
 
 chaos:
 	bash scripts/chaos_test.sh
+
+backup:
+	$(PYTHON) scripts/push_hf_backup.py --repo $(or $(HF_REPO),Ggboykxz/t4llm-source)
+
+push:
+	git push origin main
