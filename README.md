@@ -15,7 +15,7 @@ GGUF. The durable source of truth is the Hub; local disk is a cache.
 | Crash-only CPT loop, OOM ladder, divergence rollback | implemented and tested |
 | Resume with RNG/optimizer/scheduler and loss guard | implemented and tested |
 | Held-out + general-regression eval | implemented and tested on the tiny fixture |
-| Merged safetensors export + GGUF conversion | merge/safetensors tested on the tiny fixture; f16 GGUF conversion measured on Qwen3-1.7B-Base (base, not a fine-tuned export) |
+| Merged safetensors + GGUF export | measured end-to-end on Qwen3-0.6B-Base (SFT step 1, fp16, local transport); real Hub export not yet run |
 | SFT trainer | implemented and tested: prompt masking, no packing, NEFTune, crash-only resume |
 | DPO trainer | implemented and tested: sigmoid objective, adapter-disabled reference, crash-only resume |
 | Real domain run | **blocked** on domain, repo names, dataset licence, and base confirmation |

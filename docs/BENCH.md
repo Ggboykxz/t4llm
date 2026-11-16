@@ -19,3 +19,17 @@ The tiny test fixture uses a synthetic `WordLevel` tokenizer, which llama.cpp
 does not recognise as a BPE pre-tokenizer. GGUF conversion is therefore tested
 on a real model directory; the fixture covers the merge/safetensors path with
 `--no-gguf`.
+
+## Merged SFT export (measured, local transport)
+
+One SFT step on `Qwen/Qwen3-0.6B-Base` (4 licence-declaring records, seq 128,
+LoRA r=8/alpha=16), then a full merge to fp16 safetensors and f16 GGUF. The
+export was published to the local test backend only, not to a real Hub repo.
+
+| UTC | base | phase/step | train s | merged safetensors bytes | GGUF f16 bytes | total s | safetensors dtype | adapter keys |
+|---|---|---|---:|---:|---:|---:|---|---:|
+| 2026-11-16T13:57:50+00:00 | Qwen/Qwen3-0.6B-Base | sft/1 | 23.7 | 1192134784 | 1198182080 | 102.6 | fp16 | 0 |
+
+The GGUF magic is `GGUF`, the export manifest lists 8 files, and `SHA256SUMS`
+covers every file except itself. This is a smoke test, not a quality result:
+one step is not a trained model.
