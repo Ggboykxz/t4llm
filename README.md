@@ -143,6 +143,8 @@ LATEST_DATA                    human convenience pointer
 - Fine-grained tokens should have write access only to the two run repos.
 - Do not commit `runs/`, `exports/`, `data/`, or any `.env`.
 - `.gitignore` already excludes checkpoints, safetensors, GGUF, and local runs.
+- If a token is ever exposed in chat, a screenshot or notebook output, rotate it.
+  This repository never stores one.
 
 ## Licence
 
