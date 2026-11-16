@@ -47,11 +47,14 @@ Measured on this host: Tesla T4, 14.56 GiB, compute capability 7.5, Python
 bitsandbytes 0.50.2, datasets 4.8.5. See `docs/BENCH.md` for the measured
 throughput/VRAM/checkpoint/upload table.
 
-Source mirrors:
+Source mirrors and first run:
 
-- GitHub: <https://github.com/Ggboykxz/t4llm>
+- GitHub: <https://github.com/Ggboykxz/t4llm> — Apache-2.0
 - Hugging Face source backup: <https://huggingface.co/Ggboykxz/t4llm-source>
-  (source only, no weights or data; no licence chosen)
+  (source only, no weights or data)
+- First real run (ADR-0015): Python code SFT of Qwen3-1.7B-Base.
+  Data: <https://huggingface.co/datasets/Ggboykxz/t4llm-python-data> (ODC-BY-1.0).
+  Model: <https://huggingface.co/Ggboykxz/t4llm-python-sft> (Apache-2.0, work in progress).
 
 ## Quick start
 
