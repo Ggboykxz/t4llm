@@ -707,6 +707,8 @@ def _train_phase_inner(
     ckpt_minutes = float(cfg["resilience"]["ckpt_every_minutes"])
     ckpt_steps = int(cfg["resilience"]["ckpt_every_steps"])
     heartbeat_seconds = int(cfg["resilience"]["heartbeat_seconds"])
+    tok_s = 0.0
+    vram = 0.0
     last_ckpt_time = time.monotonic()
     last_ckpt_step = start_step
     last_full_time = time.monotonic()
@@ -771,6 +773,34 @@ def _train_phase_inner(
             last_full_time = time.monotonic()
         log(f"checkpoint queued at step {state.global_step} ({tier})")
         _meter(metrics_path, {"event": "checkpoint", "step": state.global_step, "tier": tier})
+
+    def final_heartbeat(status: str) -> None:
+        try:
+            try:
+                hb_step = state.global_step
+                hb_loss = round(float(loss_ema), 4)
+                hb_consumed = int(state.consumed_tokens)
+                hb_events = state.events[-3:]
+            except Exception:
+                hb_step, hb_loss, hb_consumed, hb_events = 0, 0.0, 0, []
+            push.write_heartbeat(
+                {
+                    "run_id": run_id,
+                    "phase": phase,
+                    "step": hb_step,
+                    "loss_ema": hb_loss,
+                    "tok_s": round(float(tok_s), 2),
+                    "vram_gib": round(float(vram), 2),
+                    "session_age_s": int(time.time() - session_start),
+                    "last_push_utc": push.last_success_utc,
+                    "consumed_tokens": hb_consumed,
+                    "events": hb_events,
+                    "status": status,
+                    "utc": utcnow(),
+                }
+            )
+        except Exception as exc:
+            log(f"final heartbeat failed (non-fatal): {exc}")
 
     log(
         f"run={run_id} phase={phase} step={start_step} max_steps={max_steps} "
@@ -1069,10 +1099,15 @@ def _train_phase_inner(
             save_run_state(run_dir, state)
             raise T4TrainError(f"final checkpoint push failed: {exc}") from exc
         save_run_state(run_dir, state)
+        final_heartbeat(state.status)
         _meter(metrics_path, {"event": "exit", "status": state.status, "step": state.global_step}, fsync=True)
         log(f"exit status={state.status} step={state.global_step}")
         return exit_code
     except (OOMRefused, FatalResume, DivergenceStop):
+        try:
+            final_heartbeat("fatal")
+        except Exception:
+            pass
         raise
     except KeyboardInterrupt:
         status = "interrupted"
@@ -1082,6 +1117,10 @@ def _train_phase_inner(
         finally:
             state.status = "stopped"
             save_run_state(run_dir, state)
+            try:
+                final_heartbeat("stopped")
+            except Exception:
+                pass
         return 0
 
 
