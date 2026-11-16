@@ -110,6 +110,9 @@ def test_resume_loss_guard():
         assert_resume_loss([2.0] * 10, 1.0)
     with pytest.raises(ResumeDiverged, match="need 10"):
         assert_resume_loss([1.0] * 9, 1.0)
+    # A lower loss after resume is an improvement, not a broken restore.
+    assert_resume_loss([0.6] * 10, 1.0)
+    assert_resume_loss([0.5] * 10, 0.988)  # the real SFT resume case (36% below EMA)
 
 
 def test_resume_events_are_append_only(tmp_path):

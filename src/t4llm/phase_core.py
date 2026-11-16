@@ -939,7 +939,7 @@ def _train_phase_inner(
                 if loss_ema <= 0:
                     loss_ema = mean_loss
                 else:
-                    loss_ema = 0.98 * loss_ema + 0.02 * mean_loss
+                    loss_ema = 0.90 * loss_ema + 0.10 * mean_loss
                 state.loss_ema = float(loss_ema)
                 if previous_ema > 0 and mean_loss > 1.5 * previous_ema:
                     consecutive_spikes += 1

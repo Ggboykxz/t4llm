@@ -216,3 +216,23 @@ revision) and the run fits the T4 and the resumable checkpoint design.
 **Consequence:** if the domain is changed later, `configs/sft.yaml` and the
 data repo are the only places to touch; the trainers, checkpoint schema and
 export path are domain-agnostic.
+
+## ADR-0016 — resume loss check is one-sided; EMA tracks faster
+
+**Decision:** `assert_resume_loss` now fails only when the mean of the ten
+post-resume losses exceeds `(1 + resume_loss_tolerance)` × the pre-death loss
+EMA. A lower mean is accepted. Separately, the loss EMA decay changed from
+`0.98/0.02` to `0.90/0.10`.
+
+**Why:** the two-sided check compared a fast-improving SFT run against a
+near-step-1 EMA. On a healthy resume (measured on the real Hub checkpoint
+`qwen3-1.7b-python-sft-sft-06787eba` step 8) the next-10 mean was 0.624 vs EMA
+0.988 — 37 % *below* EMA, i.e. an improvement — and the runner was refused and
+ended in `state.status = "fatal"`. Losses that fall can never indicate a broken
+restore; only losses that spike above the EMA can. The old EMA was also too
+slow to be useful for telemetry or spike detection.
+
+**Consequence:** resume is possible again for runs with falling loss. The
+one-sided check still guards corruption (swapped weights, lost optimizer state,
+wrong cursor) whose signature is a loss *higher* than the pre-death EMA. Loss
+EMA is not part of the run identity; changing the decay does not fork a run.

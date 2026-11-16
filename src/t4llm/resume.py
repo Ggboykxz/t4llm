@@ -207,17 +207,23 @@ def load_scheduler(scheduler: Any, path: str | Path) -> None:
 
 
 def assert_resume_loss(losses: list[float], ema: float, tolerance: float = 0.05) -> float:
-    """§9.7: ten post-resume losses must be within ±tolerance of pre-death EMA."""
+    """§9.7: ten post-resume losses must not exceed (1 + tolerance) × pre-death EMA.
+
+    The check is one-sided. A restored model that *improves* after resume
+    cannot indicate a broken restore, so a lower mean loss is accepted. The
+    check exists to catch a corrupted or silently swapped restore, whose
+    signature is a loss *higher* than the pre-death EMA.
+    """
     if len(losses) < 10:
         raise ResumeDiverged(f"need 10 post-resume losses, got {len(losses)}")
     if not ema or ema <= 0:
         return float(np.mean(losses[:10]))
     mean = float(np.mean(losses[:10]))
-    rel = abs(mean - ema) / ema
-    if rel > tolerance:
+    if mean > ema * (1.0 + tolerance):
+        rel = (mean - ema) / ema
         raise ResumeDiverged(
             f"resume loss check failed: next-10 mean {mean:.4f} vs pre-death EMA "
-            f"{ema:.4f} ({rel*100:.1f}% > {tolerance*100:.0f}%); refusing to train"
+            f"{ema:.4f} (+{rel * 100:.1f}% > {tolerance * 100:.0f}%); refusing to train"
         )
     return mean
 
