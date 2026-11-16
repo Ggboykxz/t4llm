@@ -1,0 +1,8 @@
+# Phase 1 — continued pretraining on the domain corpus.
+# `make train` loads base.yaml first, then this file.
+run:
+  phase: cpt
+  base_slug: qwen3-1.7b
+train:
+  lr: 0.00015
+  max_steps: 20000

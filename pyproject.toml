@@ -1,0 +1,21 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "t4llm"
+version = "0.1.0"
+description = "Crash-only, resumable domain specialization of a small LLM on a single T4"
+requires-python = ">=3.10"
+dependencies = []  # resolved and pinned in requirements.lock by bootstrap.sh
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+markers = [
+  "gpu: requires a CUDA GPU",
+  "slow: long-running resilience test",
+]
+addopts = "-q"

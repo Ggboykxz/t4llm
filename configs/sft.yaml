@@ -1,0 +1,16 @@
+# Phase 2 — supervised fine-tuning with the base model's exact chat template.
+# Packing OFF; completion-only loss masking; NEFTune eps=5; 2–3 epochs.
+run:
+  phase: sft
+  base_slug: qwen3-1.7b
+data:
+  sft_file: null          # JSONL: messages OR prompt+response, plus license
+train:
+  lr: 0.0001
+  max_steps: 3000
+  micro_batch: 2
+  grad_accum: 16
+  packing: false
+  train_on_responses_only: true
+  neftune_noise_alpha: 5.0
+  num_train_epochs: 2

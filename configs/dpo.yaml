@@ -1,0 +1,15 @@
+# Phase 3 — optional preference tuning with the standard sigmoid DPO loss.
+# The reference policy is the same model with the LoRA adapter disabled.
+run:
+  phase: dpo
+  base_slug: qwen3-1.7b
+data:
+  pref_file: null         # JSONL: prompt/chosen/rejected, plus license
+train:
+  lr: 0.000005
+  max_steps: 1000
+  micro_batch: 1
+  grad_accum: 16
+  beta: 0.1
+  num_train_epochs: 1
+  loss_type: dpo
